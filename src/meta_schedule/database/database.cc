@@ -37,6 +37,8 @@ Workload::Workload(IRModule mod, Workload::THashCode shash) {
   data_ = std::move(n);
 }
 
+tvm::runtime::String WorkloadNode::GetHash() const { return SHash2Str(this->shash); }
+
 ObjectRef WorkloadNode::AsJSON() const {
   // Convert `this->mod` to JSON
   std::string json_mod = tvm::SaveJSON(this->mod);
@@ -160,6 +162,8 @@ TVM_REGISTER_GLOBAL("meta_schedule.Workload").set_body_typed([](IRModule mod) {
 TVM_REGISTER_GLOBAL("meta_schedule.WorkloadAsJSON")
     .set_body_method<Workload>(&WorkloadNode::AsJSON);
 TVM_REGISTER_GLOBAL("meta_schedule.WorkloadFromJSON").set_body_typed(&Workload::FromJSON);
+TVM_REGISTER_GLOBAL("meta_schedule.GetHash")
+    .set_body_typed<tvm::runtime::String(Workload)>([](Workload w) { return w->GetHash(); });
 TVM_REGISTER_GLOBAL("meta_schedule.TuningRecord")
     .set_body_typed([](tir::Trace trace, Array<FloatImm> run_secs, Workload workload, Target target,
                        Array<ArgInfo> args_info) {

@@ -49,6 +49,12 @@ class WorkloadNode : public runtime::Object {
    * \return An array containing the structural hash and the base64 json string.
    */
   ObjectRef AsJSON() const;
+
+  /*!
+   * \brief Export the structural hash of the workload.
+   * \return A string representing the structural hash.
+   */
+  tvm::runtime::String GetHash() const;
 };
 
 /*!
