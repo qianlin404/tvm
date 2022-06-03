@@ -69,13 +69,13 @@ import ctypes
 import functools
 import logging
 import os
+import pickle
 import platform
 import shutil
 import sys
 import time
-import pickle
-import pytest
 import numpy as np
+import pytest
 import tvm
 import tvm.arith
 import tvm.tir
