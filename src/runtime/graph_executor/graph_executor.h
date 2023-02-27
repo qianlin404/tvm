@@ -154,11 +154,17 @@ class TVM_DLL GraphExecutor : public ModuleNode {
    * \return The number of outputs from graph.
    */
   int NumOutputs() const;
-  /*!
+  /*!t
    * \brief Get the number of inputs
    *
    * \return The number of inputs to the graph.
    */
+  /*!
+   * \brief Get the number of op_execs
+   * @return The number of op_execs
+   */
+  int NumOpExecs() const;
+
   int NumInputs() const;
   /*!
    * \brief Return NDArray for given input index.
@@ -179,6 +185,7 @@ class TVM_DLL GraphExecutor : public ModuleNode {
    * \param index The output index.
    * \param data_out the output data.
    */
+
   void CopyOutputTo(int index, DLTensor* data_out);
   /*!
    * \brief Load parameters from binary stream
@@ -206,6 +213,12 @@ class TVM_DLL GraphExecutor : public ModuleNode {
   uint32_t GetNumOfNodes() const { return static_cast<uint32_t>(nodes_.size()); }
 
   std::string GetNodeName(uint32_t nid) const { return nodes_[nid].name; }
+
+  void Execute(void);
+  void ExecuteKernel(size_t idx);
+  uint32_t GetNumKernels() const { return static_cast<uint32_t>(kernels_.size()); }
+  std::string GetKernelName(uint32_t nid) const { return kernel_names_[nid]; }
+
 
  protected:
   // Memory pool entry.
@@ -475,6 +488,10 @@ class TVM_DLL GraphExecutor : public ModuleNode {
   std::vector<size_t> data_alignment_;
   /*! \brief Operator on each node. */
   std::vector<std::function<void()>> op_execs_;
+  /*! \brief Not-empty operators */
+  std::vector<std::function<void()>> kernels_;
+  /*! \brief Kernels names */
+  std::vector<std::string> kernel_names_;
   /*! \brief Linked parameter lookup function. */
   PackedFunc lookup_linked_param_;
   /*! \brief Module's _lookup_linked_param function, used by DefaultLookupLinkedParam. */

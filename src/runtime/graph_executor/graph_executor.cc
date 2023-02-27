@@ -241,11 +241,17 @@ void GraphExecutor::SetOutputZeroCopy(int index, DLTensor* data_ref) {
   }
 }
 /*!
- * \brief Get the number of outputs
+ * \brief Get the number of outputse
  *
  * \return The number of outputs from graph.
  */
 int GraphExecutor::NumOutputs() const { return outputs_.size(); }
+
+/*!
+   * \brief Get the number of op_execs
+   * @return The number of op_execs
+ */
+int GraphExecutor::NumOpExecs() const { return op_execs_.size(); };
 /*!
  * \brief Get the number of inputs
  *
@@ -518,6 +524,9 @@ void GraphExecutor::SetupOpExecs() {
     std::shared_ptr<OpArgs> op_args = nullptr;
     std::tie(op_execs_[nid], op_args) = CreateTVMOp(inode.param, args);
 
+    kernels_.push_back(op_execs_[nid]);
+    kernel_names_.push_back(inode.name);
+
     for (size_t i = 0; i < inode.inputs.size(); i++) {
       uint32_t input_eid = this->entry_id(inode.inputs[i]);
       // check if op input is model input
@@ -591,6 +600,16 @@ std::pair<std::function<void()>, std::shared_ptr<GraphExecutor::OpArgs>> GraphEx
     pf.CallPacked(targs, &rv);
   };
   return {fexec, arg_ptr};
+}
+
+void GraphExecutor::ExecuteKernel(size_t idx) {
+  kernels_[idx]();
+}
+
+void GraphExecutor::Execute() {
+  for (auto const& kernel : kernels_){
+    kernel();
+  }
 }
 
 PackedFunc GraphExecutor::GetFunction(const std::string& name,
@@ -723,6 +742,34 @@ PackedFunc GraphExecutor::GetFunction(const std::string& name,
       input_info.Set("shape", shape_info);
       input_info.Set("dtype", dtype_info);
       *rv = input_info;
+    });
+  } else if (name == "get_num_op_execs") {
+    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv){
+      *rv = this->NumOpExecs();
+    });
+  } else if (name == "get_num_nodes") {
+    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv){
+      *rv = static_cast<int>(this->GetNumOfNodes());
+    });
+  } else if (name == "get_num_kernels") {
+    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
+      *rv = static_cast<int>(this->GetNumKernels());
+    });
+  } else if (name == "get_node_name") {
+    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv){
+      *rv = this->GetNodeName(args[0].operator int());
+    });
+  } else if (name == "get_kernel_name") {
+    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
+      *rv = this->GetKernelName(args[0].operator uint64_t());
+    });
+  } else if (name == "execute_kernel") {
+    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
+      this->ExecuteKernel(args[0].operator uint64_t());
+    });
+  } else if (name == "execute") {
+    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
+      this->Execute();
     });
   } else {
     return PackedFunc();
