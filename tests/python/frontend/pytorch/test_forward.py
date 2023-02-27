@@ -4232,6 +4232,12 @@ def test_forward_scatter():
     verify_trace_model(test_fn_scatter(1), [in_data, in_index, in_src], targets)
     verify_trace_model(test_fn_scatter_add(1), [in_data, in_index, in_src], targets)
 
+    # Check empty indices for scatter_add
+    in_data = torch.zeros(2, 4)
+    in_index = torch.empty((0,))
+    in_src = torch.rand(2, 1)
+    verify_trace_model(test_fn_scatter_add(0), [in_data, in_index, in_src], targets)
+
 
 def test_forward_scatter_reduce():
     """test_forward_scatter_reduce"""
@@ -4246,16 +4252,14 @@ def test_forward_scatter_reduce():
     in_src = torch.rand(2, 5) - 1
 
     targets = ["llvm", "cuda"]
-    # TODO(vvchernov): support test of mean reduction and include_self=False
-    for reduce in ["sum", "prod", "amin", "amax"]:
+    for reduce in ["sum", "prod", "amin", "amax", "mean"]:
         verify_trace_model(test_fn_scatter_reduce(0, reduce), [in_data, in_index, in_src], targets)
 
     in_data = torch.rand(2, 4) - 1
     in_index = torch.tensor([[2], [3]])
     in_src = torch.rand(2, 1) - 1
 
-    # TODO(vvchernov): support test of mean reduction and include_self=False
-    for reduce in ["sum", "prod", "amin", "amax"]:
+    for reduce in ["sum", "prod", "amin", "amax", "mean"]:
         verify_trace_model(test_fn_scatter_reduce(1, reduce), [in_data, in_index, in_src], targets)
 
 
